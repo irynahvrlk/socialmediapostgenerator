@@ -703,10 +703,20 @@
       </div>
 
       <div class="field">
-        <label>Brand color</label>
-        <div class="field-row">
-          <input type="text" id="brand-color-text" value="#E63946" placeholder="#E63946" />
-          <input type="color" id="brand-color" value="#E63946" />
+        <label>Brand colors <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text-muted)">(up to 3)</span></label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="field-row">
+            <input type="text" id="brand-color-text-1" value="#E63946" placeholder="#E63946" />
+            <input type="color" id="brand-color-1" value="#E63946" />
+          </div>
+          <div class="field-row">
+            <input type="text" id="brand-color-text-2" value="" placeholder="Optional 2nd color" />
+            <input type="color" id="brand-color-2" value="#172B7C" />
+          </div>
+          <div class="field-row">
+            <input type="text" id="brand-color-text-3" value="" placeholder="Optional 3rd color" />
+            <input type="color" id="brand-color-3" value="#FFFFFF" />
+          </div>
         </div>
       </div>
 
@@ -803,8 +813,6 @@
   const submitBtn = document.getElementById("submit-btn");
   const resultsCard = document.getElementById("results-card");
   const platformGrid = document.getElementById("platform-grid");
-  const brandColorInput = document.getElementById("brand-color");
-  const brandColorText = document.getElementById("brand-color-text");
 
   // Platform toggle
   platformGrid.addEventListener("click", (e) => {
@@ -813,13 +821,15 @@
     btn.classList.toggle("active");
   });
 
-  // Sync color picker ↔ text
-  brandColorInput.addEventListener("input", () => {
-    brandColorText.value = brandColorInput.value.toUpperCase();
-  });
-  brandColorText.addEventListener("input", () => {
-    const v = brandColorText.value.trim();
-    if (/^#[0-9A-Fa-f]{6}$/.test(v)) brandColorInput.value = v;
+  // Sync color pickers ↔ text fields for all 3 colors
+  [1, 2, 3].forEach(i => {
+    const picker = document.getElementById(`brand-color-${i}`);
+    const text = document.getElementById(`brand-color-text-${i}`);
+    picker.addEventListener("input", () => { text.value = picker.value.toUpperCase(); });
+    text.addEventListener("input", () => {
+      const v = text.value.trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(v)) picker.value = v;
+    });
   });
 
   // Logo upload — stash as base64 so we can pass it to the image API
@@ -912,7 +922,8 @@
 
     const inputs = {
       company: document.getElementById("company").value.trim(),
-      brandColor: brandColorText.value.trim(),
+      brandColor: document.getElementById("brand-color-text-1").value.trim() || "#000000",
+      brandColors: [1,2,3].map(i => document.getElementById(`brand-color-text-${i}`).value.trim()).filter(c => /^#[0-9A-Fa-f]{6}$/.test(c)),
       jobTitle: document.getElementById("job-title").value.trim(),
       jobDescription: document.getElementById("job-description").value.trim(),
       applyLink: document.getElementById("apply-link").value.trim(),
@@ -989,7 +1000,7 @@
 
     const userPrompt =
       `Company: ${inputs.company}\n` +
-      `Brand color: ${inputs.brandColor}\n` +
+      `Brand colors: ${inputs.brandColors.join(", ")}\n` +
       `Job title: ${inputs.jobTitle}\n` +
       `Job description:\n${inputs.jobDescription}`;
 
@@ -1091,7 +1102,7 @@
       `OVERALL VIBE: ${d.vibe}. The poster should feel authentic to this specific brand, not generic.`,
       `TYPOGRAPHY: ${d.typography}. The "WE'RE HIRING" or "NOW HIRING" headline should be the visual hero — large, confident, well-crafted type.`,
       `LAYOUT & COMPOSITION: ${d.composition}.`,
-      `COLOR PALETTE: ${d.palette}. Primary brand color: ${inputs.brandColor}.`,
+      `COLOR PALETTE: ${d.palette}. Brand colors: ${inputs.brandColors.join(", ")}.`,
       `DECORATIVE ELEMENTS: ${d.decorativeElements}.`,
       ``,
       `CONTENT TO RENDER IN THE IMAGE (render this text clearly and readably):`,
