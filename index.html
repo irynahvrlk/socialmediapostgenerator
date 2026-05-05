@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CareerPlug · Hiring Post Generator</title>
+
+<!-- Fonts: Fraunces (display serif) + Geist (body sans) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- QR code library removed — no longer generating QR codes -->
+
+<style>
+  :root {
+    /* ===== CareerPlug brand ===== */
+    --cp-navy: #172B7C;          /* primary — from logo */
+    --cp-navy-deep: #0F1F5E;     /* darker for hover/pressed */
+    --cp-navy-soft: #EEF1FB;     /* tinted bg */
+    --cp-navy-border: #D6DCF0;
+    --cp-accent: #3B4FC4;        /* supporting blue */
+
+    /* ===== Neutrals ===== */
+    --bg: #FAFAF7;
+    --surface: #FFFFFF;
+    --border: #EAEAE4;
+    --border-strong: #D4D4CC;
+    --text: #1A1F2E;
+    --text-muted: #5A6074;
+    --text-soft: #8A8F9F;
+
+    /* ===== Design tokens ===== */
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 1px 2px rgba(23, 43, 124, 0.04);
+    --shadow: 0 4px 20px -4px rgba(23, 43, 124, 0.08), 0 2px 6px rgba(23, 43, 124, 0.04);
+    --shadow-lg: 0 20px 50px -10px rgba(23, 43, 124, 0.14), 0 8px 20px -6px rgba(23, 43, 124, 0.06);
+
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Subtle atmospheric background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(23, 43, 124, 0.05), transparent 45%),
+      radial-gradient(circle at 85% 95%, rgba(59, 79, 196, 0.04), transparent 45%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ========== HEADER ========== */
+  .header {
+    position: relative;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .brand-logo {
+    height: 34px;
+    width: auto;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  .header-title {
+    padding-left: 20px;
+    border-left: 1px solid var(--border);
+    min-width: 0;
+  }
+
+  .header-title h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1.05;
+    font-weight: 500;
+    color: var(--cp-navy);
+    letter-spacing: -0.015em;
+  }
+
+  .header-title p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  .pill {
+    background: var(--cp-navy);
+    color: white;
+    padding: 9px 16px;
+    border-radius: 100px;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #7EE787;
+    box-shadow: 0 0 8px rgba(126, 231, 135, 0.7);
+  }
+
+  /* ========== LAYOUT ========== */
+  .layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(380px, 440px) 1fr;
+    gap: 28px;
+    padding: 32px 40px 60px;
+    max-width: 1600px;
+    margin: 0 auto;
+    align-items: start;
+  }
+
+  /* ============ RESPONSIVE ============ */
+  /* Tablet — single column, tighter paddings */
+  @media (max-width: 960px) {
+    .layout {
+      grid-template-columns: 1fr;
+      gap: 20px;
+      padding: 20px;
+    }
+    .header { padding: 14px 20px; gap: 14px; }
+    .header-title { border-left: none; padding-left: 0; }
+    .header-title h1 { font-size: 22px; }
+    .header-title p { font-size: 12px; }
+    .brand-logo { height: 28px; }
+    .card { padding: 22px; }
+    .results-card { min-height: 300px; }
+    .empty-state { min-height: 260px; }
+    .loading-state { min-height: 260px; }
+  }
+
+  /* Phone — further compression, stacked header, single-column posts */
+  @media (max-width: 600px) {
+    body { font-size: 14px; }
+    .layout {
+      padding: 12px;
+      gap: 14px;
+    }
+    .header {
+      padding: 12px 16px;
+      gap: 10px;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .header-left {
+      width: 100%;
+      gap: 12px;
+    }
+    .header-title {
+      padding-left: 12px;
+      border-left: 1px solid var(--border);
+    }
+    .header-title h1 { font-size: 18px; }
+    .header-title p { font-size: 11.5px; line-height: 1.35; }
+    .brand-logo { height: 24px; }
+    .card { padding: 18px; border-radius: 16px; }
+    .form-card h2 { font-size: 22px; }
+    .form-card .intro { font-size: 13px; margin-bottom: 18px; }
+    .field { margin-bottom: 14px; }
+    .field label { font-size: 11px; }
+    .field input[type="text"],
+    .field input[type="url"],
+    .field textarea {
+      font-size: 16px;  /* 16px prevents iOS auto-zoom on focus */
+      padding: 11px 12px;
+    }
+    .field textarea { min-height: 96px; }
+    .platform-btn {
+      font-size: 12.5px;
+      padding: 8px 12px;
+    }
+    .platform-btn svg { width: 13px; height: 13px; }
+    .submit-btn {
+      font-size: 15px;
+      padding: 14px 18px;
+      margin-top: 18px;
+    }
+    .logo-upload-inner { padding: 12px; gap: 10px; }
+    .logo-upload-inner svg { width: 24px; height: 24px; }
+    .logo-upload-inner strong { font-size: 12.5px; }
+    .logo-upload-inner span { font-size: 11px; }
+
+    /* Results */
+    .results-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+    }
+    .results-header h2 { font-size: 20px; }
+    .results-header .count { font-size: 12px; }
+    .post-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .post-caption { max-height: 180px; font-size: 13px; }
+    .loading-state .step { font-size: 16px; text-align: center; padding: 0 20px; }
+    .footer { padding: 20px 16px; }
+    .error-banner { font-size: 12.5px; }
+  }
+
+  /* Very narrow phones — don't let anything overflow */
+  @media (max-width: 360px) {
+    .layout { padding: 10px; }
+    .card { padding: 14px; }
+    .header { padding: 10px 14px; }
+    .header-title h1 { font-size: 16px; }
+    .form-card h2 { font-size: 20px; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ========== FORM ========== */
+  .form-card h2 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.15;
+    color: var(--cp-navy);
+    letter-spacing: -0.015em;
+    margin-bottom: 8px;
+  }
+  .form-card h2 em {
+    font-style: italic;
+    font-weight: 400;
+  }
+  .form-card .intro {
+    color: var(--text-muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin-bottom: 24px;
+  }
+
+  .field { margin-bottom: 18px; }
+
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--cp-navy);
+    margin-bottom: 7px;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+  .field label .req { color: var(--cp-accent); margin-left: 3px; }
+
+  .field input[type="text"],
+  .field input[type="url"],
+  .field textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--cp-navy);
+    box-shadow: 0 0 0 3px rgba(23, 43, 124, 0.12);
+  }
+
+  .field textarea {
+    resize: vertical;
+    min-height: 110px;
+    font-family: var(--font-body);
+    line-height: 1.55;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+  }
+  input[type="color"] {
+    width: 46px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 8px; }
+
+  /* Logo upload */
+  .logo-upload {
+    position: relative;
+    border: 1.5px dashed var(--cp-navy-border);
+    border-radius: var(--radius);
+    background: var(--cp-navy-soft);
+    transition: border-color 0.15s, background 0.15s;
+    overflow: hidden;
+  }
+  .logo-upload:hover { border-color: var(--cp-navy); }
+  .logo-upload input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .logo-upload-inner {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--cp-navy);
+    pointer-events: none;
+  }
+  .logo-upload-inner svg { width: 28px; height: 28px; flex-shrink: 0; }
+  .logo-upload-inner strong { display: block; font-size: 13px; font-weight: 600; }
+  .logo-upload-inner span { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .logo-upload.has-logo .logo-upload-inner {
+    padding: 10px 14px;
+  }
+  .logo-upload-preview {
+    max-height: 38px;
+    max-width: 120px;
+    border-radius: 6px;
+    background: white;
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+  }
+  .logo-remove {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 6px;
+    pointer-events: auto;
+  }
+  .logo-remove:hover { background: rgba(23,43,124,0.08); color: var(--cp-navy); }
+
+  /* Platforms */
+  .platform-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .platform-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 14px;
+    border: 1.5px solid var(--cp-navy-border);
+    border-radius: 100px;
+    background: var(--surface);
+    color: var(--cp-navy);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .platform-btn:hover {
+    border-color: var(--cp-navy);
+    background: var(--cp-navy-soft);
+  }
+  .platform-btn.active {
+    background: var(--cp-navy);
+    border-color: var(--cp-navy);
+    color: white;
+  }
+  .platform-btn svg { width: 14px; height: 14px; }
+
+  /* Submit */
+  .submit-btn {
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px 20px;
+    background: var(--cp-navy);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    letter-spacing: 0.005em;
+  }
+  .submit-btn:hover:not(:disabled) { background: var(--cp-navy-deep); }
+  .submit-btn:active:not(:disabled) { transform: translateY(1px); }
+  .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .submit-btn svg { width: 16px; height: 16px; }
+
+  /* ========== RESULTS ========== */
+  .results-card {
+    min-height: 640px;
+    position: relative;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 580px;
+    padding: 40px 20px;
+  }
+
+  .empty-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--cp-navy-soft);
+    display: grid;
+    place-items: center;
+    margin-bottom: 20px;
+    color: var(--cp-navy);
+  }
+  .empty-icon svg { width: 26px; height: 26px; }
+
+  .empty-state h3 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--cp-navy);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .empty-state p {
+    color: var(--text-muted);
+    font-size: 14px;
+    max-width: 360px;
+    line-height: 1.55;
+  }
+
+  /* Loading */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 580px;
+    gap: 18px;
+  }
+  .spinner {
+    width: 42px;
+    height: 42px;
+    border: 3px solid var(--cp-navy-soft);
+    border-top-color: var(--cp-navy);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-state p {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .loading-state .step {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--cp-navy);
+    font-size: 18px;
+  }
+
+  /* Results grid */
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .results-header h2 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--cp-navy);
+    letter-spacing: -0.015em;
+  }
+  .results-header h2 em { font-style: italic; font-weight: 400; }
+  .results-header .count {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .post-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .post-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .post-card:hover {
+    border-color: var(--cp-navy-border);
+    box-shadow: var(--shadow);
+  }
+
+  .post-platform {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(to bottom, #FBFBF8, var(--surface));
+  }
+  .post-platform-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cp-navy);
+  }
+  .post-platform-label svg { width: 15px; height: 15px; }
+  .download-btn {
+    padding: 5px 11px;
+    border: 1px solid var(--cp-navy-border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--cp-navy);
+    font-size: 11.5px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+  .download-btn:hover {
+    background: var(--cp-navy-soft);
+    border-color: var(--cp-navy);
+  }
+  .download-btn svg { width: 12px; height: 12px; }
+
+  .post-image {
+    width: 100%;
+    height: auto;
+    background: #f5f5f0;
+    display: block;
+  }
+
+  .post-caption {
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .post-caption::-webkit-scrollbar { width: 5px; }
+  .post-caption::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  .copy-caption-btn {
+    width: 100%;
+    padding: 9px;
+    background: var(--cp-navy-soft);
+    color: var(--cp-navy);
+    border: none;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .copy-caption-btn:hover { background: #E2E7F5; }
+  .copy-caption-btn svg { width: 12px; height: 12px; }
+
+  /* Error state */
+  .error-banner {
+    padding: 14px 16px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: var(--radius);
+    color: #991B1B;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .error-banner strong { font-weight: 600; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-soft);
+    font-size: 12px;
+    position: relative;
+    z-index: 1;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<header class="header">
+  <div class="header-left">
+    <!-- CareerPlug logo -->
+    <svg class="brand-logo" id="cp-logo-embedded" width="1000" height="174" viewBox="0 0 1000 174" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M261.225 30.5607C278.029 30.5607 292.903 37.8236 303.163 49.4312L287.538 62.3475C280.993 55.2416 271.619 50.8838 261.211 50.8838C242.77 50.8838 228.34 64.5329 228.34 82.8146C228.34 101.096 242.77 114.601 261.211 114.601C271.619 114.601 281.141 110.244 287.686 102.994L303.31 115.91C293.05 127.662 278.029 134.925 261.211 134.925C230.418 134.925 205.433 113.005 205.433 82.8277C205.433 52.6505 230.418 30.5737 261.211 30.5737L261.225 30.5607Z" fill="#0B2484"/> <path d="M343.619 58.8538C355.073 58.8538 363.857 63.3555 365.936 69.7416V60.1624H388.106V107.627C388.106 113.581 389.742 115.753 393.604 115.753C394.65 115.753 396.287 115.609 397.319 115.465V133.459C395.093 134.179 390.922 134.624 387.354 134.624C383.344 134.624 378.878 134.048 375.163 132.007C372.79 130.554 369.812 128.238 368.471 124.168C364.153 130.41 356.723 134.768 343.633 134.768C322.362 134.768 306.456 118.083 306.456 96.7389C306.456 75.395 322.376 58.8538 343.633 58.8538H343.619ZM347.629 115.021C358.493 115.021 367.264 107.038 367.264 96.7389C367.264 86.4399 358.493 78.4572 347.629 78.4572C336.766 78.4572 328.585 86.4399 328.585 96.7389C328.585 107.038 336.914 115.021 347.629 115.021Z" fill="#0B2484"/> <path d="M407.276 60.1621H429.446V70.1732C432.866 62.7663 440.899 58.5656 451.159 58.5656C453.238 58.5656 455.773 58.8535 456.953 58.9974V79.3206C454.874 78.8888 452.339 78.6009 449.523 78.6009C436.876 78.6009 429.446 85.7068 429.446 97.6154V133.315H407.276V60.1621Z" fill="#0B2484"/> <path d="M461.282 96.5966C461.282 73.2243 478.543 58.2797 501.893 58.2797C525.242 58.2797 540.411 74.8209 540.411 95.4319C540.411 95.4319 540.411 99.0569 540.116 102.394H483.438C483.881 111.096 491.619 116.763 503.368 116.763C511.106 116.763 516.458 114.446 521.661 109.657L534.603 121.709C524.639 131.72 513.775 135.058 502.322 135.058C477.926 135.058 461.269 120.113 461.269 97.1724V96.5966H461.282ZM518.107 88.326C518.107 81.652 510.825 76.1295 501.893 76.1295C492.223 76.1295 484.337 81.4949 483.747 88.326H518.107Z" fill="#0B2484"/> <path d="M548.293 96.5966C548.293 73.2243 565.54 58.2797 588.903 58.2797C612.266 58.2797 627.421 74.8209 627.421 95.4319C627.421 95.4319 627.421 99.0569 627.126 102.394H570.462C570.905 111.096 578.643 116.763 590.392 116.763C598.13 116.763 603.481 114.446 608.685 109.657L621.627 121.709C611.663 131.72 600.799 135.058 589.346 135.058C564.95 135.058 548.293 120.113 548.293 97.1724V96.5966ZM605.104 88.326C605.104 81.652 597.822 76.1295 588.89 76.1295C579.22 76.1295 571.334 81.4949 570.744 88.326H605.104Z" fill="#0B2484"/> <path d="M638.562 60.1621H660.731V70.1732C664.151 62.7663 672.184 58.5656 682.444 58.5656C684.523 58.5656 687.058 58.8535 688.251 58.9974V79.3206C686.172 78.8888 683.638 78.6009 680.808 78.6009C668.161 78.6009 660.731 85.7068 660.731 97.6154V133.315H638.562V60.1621Z" fill="#0B2484"/> <path d="M699.477 32.1572H743.212C758.984 32.1572 778.163 44.1967 778.163 66.4043C778.163 86.8714 760.312 100.651 743.212 100.651H722.384V133.302H699.477V32.1572ZM741.871 80.3413C746.484 80.3413 755.256 77.4361 755.256 66.4043C755.256 55.3725 746.484 52.4673 741.871 52.4673H722.384V80.3282H741.871V80.3413Z" fill="#0B2484"/> <path d="M787.885 32.1555H810.041V106.172C810.041 112.846 812.576 115.607 818.664 115.607C820.301 115.607 822.379 115.463 824.016 115.032V134.19C821.789 134.766 817.471 135.211 813.461 135.211C802.906 135.211 787.872 132.018 787.872 109.522V32.1555H787.885Z" fill="#0B2484"/> <path d="M832.356 60.1622H854.512V101.96C854.512 110.375 858.978 115.753 867.454 115.753C875.488 115.753 881.282 109.799 881.282 101.24V60.1622H903.438V107.627C903.438 113.581 905.074 115.753 908.936 115.753C909.982 115.753 911.619 115.609 912.651 115.465V133.459C910.425 134.179 906.254 134.624 902.687 134.624C898.663 134.624 894.21 134.048 890.495 132.006C888.108 130.554 885.144 128.238 883.803 124.168C880.531 130.41 873.396 134.912 861.781 134.912C842.898 134.912 832.33 123.448 832.33 104.577V60.1622H832.356Z" fill="#0B2484"/> <path d="M956.559 146.232C962.662 146.232 968.16 144.923 971.875 142.463C977.669 138.55 978.42 132.007 978.42 126.497V124.901C975.295 129.978 966.672 133.747 955.513 133.747C934.243 133.747 918.336 117.494 918.336 96.7389C918.336 75.9838 934.256 58.8538 955.513 58.8538C966.967 58.8538 975.751 63.3555 977.83 69.7416V60.1624H999.999V121.119C999.999 136.207 997.921 148.404 986.91 156.818C980.07 162.04 970.253 165.233 959.698 165.233C945.267 165.233 933.223 162.04 922.963 154.934L933.518 139.257C940.358 143.47 947.802 146.218 956.573 146.218L956.559 146.232ZM959.523 114.733C970.387 114.733 979.158 106.894 979.158 96.7389C979.158 86.5838 970.387 78.4572 959.523 78.4572C948.66 78.4572 940.479 86.4399 940.479 96.7389C940.479 107.038 948.807 114.733 959.523 114.733Z" fill="#0B2484"/> <path d="M118.846 0C148.851 7.70531e-05 173.175 24.324 173.175 54.3291V118.846C173.175 148.851 148.851 173.175 118.846 173.175H54.3291C42.212 173.175 31.0217 169.208 21.9854 162.502L51.8975 133.316C59.0064 138.186 67.3337 140.621 75.6758 140.621C86.2812 140.621 96.9014 136.672 104.982 128.801L117.402 116.683C118.403 117.164 119.477 117.433 120.579 117.433C122.422 117.433 124.25 116.753 125.657 115.38C128.457 112.648 128.457 108.217 125.657 105.485L70.5254 51.7041C67.7688 49.0146 63.2573 48.661 60.3848 51.209C57.933 53.389 57.4246 56.7722 58.8027 59.4902L46.3838 71.6084C38.564 79.2386 34.2403 89.4029 34.2402 100.204C34.2402 108.627 36.8809 116.655 41.7412 123.407C41.6635 123.483 19.4217 145.072 19.3408 145.095C19.3384 145.07 15.9211 149.208 12.4346 153.438C4.66746 144.041 3.37556e-05 131.989 0 118.846V54.3291C0.000159077 24.324 24.324 0.000160806 54.3291 0H118.846ZM106.956 107.042L94.8125 118.891C84.2505 129.197 67.0728 129.197 56.5107 118.891C51.3895 113.893 48.5752 107.268 48.5752 100.204C48.5753 93.1402 51.3894 86.5147 56.5107 81.5176L68.6543 69.6689L106.956 107.042ZM141.479 60.498C138.679 57.7664 134.139 57.7663 131.324 60.498L116.076 75.377C113.276 78.1092 113.276 82.5403 116.076 85.2725C118.876 88.0045 123.417 88.0044 126.231 85.2725L141.494 70.3936H141.479C144.28 67.6613 144.28 63.2303 141.479 60.498ZM116.339 36.0059C113.539 33.2737 108.998 33.2737 106.184 36.0059L90.9355 50.8838C88.1355 53.616 88.1355 58.0471 90.9355 60.7793C93.7356 63.5114 98.2762 63.5114 101.091 60.7793L116.354 45.9014H116.339C119.139 43.1692 119.139 38.7381 116.339 36.0059Z" fill="#0B2484"/> </svg>
+    <div class="header-title">
+      <h1>Hiring Post Generator</h1>
+      <p>Create ready-to-post social content for any open role</p>
+    </div>
+  </div>
+</header>
+
+<!-- ========== MAIN LAYOUT ========== -->
+<div class="layout">
+
+  <!-- ========== FORM ========== -->
+  <section class="card form-card">
+    <h2>Build a <em>hiring post</em> in seconds</h2>
+    <p class="intro">Enter the role details and we'll generate on-brand images and platform-specific captions for every channel you pick. The apply URL is automatically included in each caption.</p>
+
+    <form id="hiring-form">
+      <div class="field">
+        <label>Company name <span class="req">*</span></label>
+        <input type="text" id="company" placeholder="e.g. Fish Window Cleaning" required />
+      </div>
+
+      <div class="field">
+        <label>Company logo (optional but recommended)</label>
+        <div class="logo-upload" id="logo-upload">
+          <input type="file" id="logo-file" accept="image/png,image/jpeg,image/webp" />
+          <div class="logo-upload-inner" id="logo-upload-inner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <div>
+              <strong>Click to upload</strong>
+              <span>PNG or JPG, ideally on transparent/white background</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Brand color</label>
+        <div class="field-row">
+          <input type="text" id="brand-color-text" value="#E63946" placeholder="#E63946" />
+          <input type="color" id="brand-color" value="#E63946" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Job title <span class="req">*</span></label>
+        <input type="text" id="job-title" value="Window Cleaning Technician" required />
+      </div>
+
+      <div class="field">
+        <label>Job description <span class="req">*</span></label>
+        <textarea id="job-description" placeholder="Paste the role details, requirements, pay, benefits…" required></textarea>
+      </div>
+
+      <div class="field">
+        <label>Link to apply <span class="req">*</span></label>
+        <input type="url" id="apply-link" value="https://fishwindowcleaning.com/careers" required />
+      </div>
+
+      <div class="field">
+        <label>Platforms</label>
+        <div class="platform-grid" id="platform-grid">
+          <button type="button" class="platform-btn active" data-platform="Instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+            Instagram
+          </button>
+          <button type="button" class="platform-btn active" data-platform="Facebook">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21.5v-8h2.7l.4-3.1h-3.1V8.4c0-.9.3-1.5 1.6-1.5h1.7V4.1c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1v2.3H7.7v3.1h2.7v8h3.1z"/></svg>
+            Facebook
+          </button>
+          <button type="button" class="platform-btn active" data-platform="LinkedIn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S.02 4.88.02 3.5C.02 2.12 1.13 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zm7.3 0h4.37v1.91h.06c.61-1.15 2.1-2.37 4.32-2.37 4.62 0 5.47 3.04 5.47 6.99V22h-4.56v-6.58c0-1.57-.03-3.58-2.18-3.58-2.18 0-2.52 1.7-2.52 3.47V22H7.52V8z"/></svg>
+            LinkedIn
+          </button>
+          <button type="button" class="platform-btn active" data-platform="Nextdoor">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2V11z"/></svg>
+            Nextdoor
+          </button>
+          <button type="button" class="platform-btn active" data-platform="TikTok">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 6.3a5 5 0 01-2.9-.9v7.2a6 6 0 11-6-6v3a3 3 0 103 3V2h3a5 5 0 003 4.3z"/></svg>
+            TikTok
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/></svg>
+        Generate hiring posts
+      </button>
+    </form>
+  </section>
+
+  <!-- ========== RESULTS ========== -->
+  <section class="card results-card" id="results-card">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/>
+        </svg>
+      </div>
+      <h3>Your posts will appear here</h3>
+      <p>Fill in the role details on the left, pick your platforms, and we'll generate ready-to-post images and captions for each one.</p>
+    </div>
+  </section>
+</div>
+
+<footer class="footer">
+  Powered by CareerPlug · Images generated with OpenAI
+</footer>
+
+<!-- ========================================================= -->
+<!-- ================  APPLICATION SCRIPT  =================== -->
+<!-- ========================================================= -->
+<script>
+  // =============================================================
+  // CONFIG — set these for your deployment
+  // =============================================================
+  //
+  // ✅ API key is stored securely as a Netlify environment variable (OPENAI_API_KEY).
+  // All OpenAI calls are proxied through Netlify Functions — the key never reaches the browser.
+  //
+
+  // Image model — per the "ChatGPT Images 2.0" announcement.
+  // Requires your OpenAI organization to be verified (Settings → General → Verifications).
+  // Fall back to "gpt-image-1" if your org isn't verified yet.
+  const IMAGE_MODEL = "gpt-image-2";
+
+  // Text model for platform-specific captions
+  const TEXT_MODEL = "gpt-4o-mini";
+
+  // =============================================================
+  // ELEMENTS
+  // =============================================================
+  const form = document.getElementById("hiring-form");
+  const submitBtn = document.getElementById("submit-btn");
+  const resultsCard = document.getElementById("results-card");
+  const platformGrid = document.getElementById("platform-grid");
+  const brandColorInput = document.getElementById("brand-color");
+  const brandColorText = document.getElementById("brand-color-text");
+
+  // Platform toggle
+  platformGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest(".platform-btn");
+    if (!btn) return;
+    btn.classList.toggle("active");
+  });
+
+  // Sync color picker ↔ text
+  brandColorInput.addEventListener("input", () => {
+    brandColorText.value = brandColorInput.value.toUpperCase();
+  });
+  brandColorText.addEventListener("input", () => {
+    const v = brandColorText.value.trim();
+    if (/^#[0-9A-Fa-f]{6}$/.test(v)) brandColorInput.value = v;
+  });
+
+  // Logo upload — stash as base64 so we can pass it to the image API
+  let uploadedLogoB64 = null;      // raw base64, no data: prefix
+  let uploadedLogoDataUrl = null;  // full data URL for preview + canvas
+  let uploadedLogoMime = null;     // e.g. "image/png"
+  const logoFileInput = document.getElementById("logo-file");
+  const logoUploadEl = document.getElementById("logo-upload");
+  const logoUploadInner = document.getElementById("logo-upload-inner");
+
+  logoFileInput.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Please upload a logo smaller than 5 MB.");
+      logoFileInput.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      uploadedLogoDataUrl = reader.result;
+      uploadedLogoB64 = reader.result.split(",")[1];
+      uploadedLogoMime = file.type;
+      // Swap to preview state
+      logoUploadEl.classList.add("has-logo");
+      logoUploadInner.innerHTML = `
+        <img src="${uploadedLogoDataUrl}" class="logo-upload-preview" alt="Logo preview" />
+        <div>
+          <strong style="font-size:12.5px;">${escapeHtml(file.name)}</strong>
+          <span>${(file.size/1024).toFixed(0)} KB · ready</span>
+        </div>
+        <button type="button" class="logo-remove" id="logo-remove">Remove</button>
+      `;
+      document.getElementById("logo-remove").addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        uploadedLogoB64 = null;
+        uploadedLogoDataUrl = null;
+        uploadedLogoMime = null;
+        logoFileInput.value = "";
+        logoUploadEl.classList.remove("has-logo");
+        logoUploadInner.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          <div>
+            <strong>Click to upload</strong>
+            <span>PNG or JPG, ideally on transparent/white background</span>
+          </div>
+        `;
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // =============================================================
+  // PLATFORM SPECS
+  // Each platform has a target image shape + tone guidance for captions
+  // =============================================================
+  const PLATFORM_SPECS = {
+    Instagram: {
+      size: "1024x1024",       // square feed
+      shape: "square",
+      tone: "energetic, visual-first, 2-4 short lines with 3-5 relevant hashtags at the end. Include emojis sparingly.",
+    },
+    Facebook: {
+      size: "1536x1024",       // landscape for news feed
+      shape: "landscape",
+      tone: "friendly, community-oriented, 3-5 sentences. End with a clear call-to-action to apply. No hashtags needed.",
+    },
+    LinkedIn: {
+      size: "1536x1024",       // landscape for professional feed
+      shape: "landscape",
+      tone: "professional, confident, 4-6 sentences emphasizing growth, team culture, and career opportunity. 2-3 hashtags at the end (e.g. #Hiring #Careers).",
+    },
+    Nextdoor: {
+      size: "1024x1024",       // square works best
+      shape: "square",
+      tone: "warm, local, neighborly — emphasize that this is a local job supporting the community. 2-4 sentences. No hashtags.",
+    },
+    TikTok: {
+      size: "1024x1536",       // portrait
+      shape: "portrait",
+      tone: "short, punchy, Gen-Z friendly — one or two lines max. Use 1-2 emojis. Include 3-5 trending-style hashtags (#hiring #fyp #jobs etc.).",
+    },
+  };
+
+  // =============================================================
+  // FORM SUBMIT
+  // =============================================================
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const inputs = {
+      company: document.getElementById("company").value.trim(),
+      brandColor: brandColorText.value.trim(),
+      jobTitle: document.getElementById("job-title").value.trim(),
+      jobDescription: document.getElementById("job-description").value.trim(),
+      applyLink: document.getElementById("apply-link").value.trim(),
+      platforms: [...document.querySelectorAll(".platform-btn.active")]
+                    .map(b => b.dataset.platform),
+      logoB64: uploadedLogoB64,
+      logoMime: uploadedLogoMime,
+      logoDataUrl: uploadedLogoDataUrl,
+    };
+
+    if (!inputs.platforms.length) {
+      showError("Please select at least one platform.");
+      return;
+    }
+    // API key is handled server-side via Netlify Functions
+
+    submitBtn.disabled = true;
+
+    try {
+      // Step 0 — analyze the client's vibe so each poster style adapts
+      renderLoading("Analyzing client vibe…");
+      inputs.designDirection = await detectClientVibe(inputs);
+
+      // Step 1 — generate captions for each platform (parallel)
+      renderLoading("Writing platform captions…");
+      const captionPromises = inputs.platforms.map(p =>
+        generateCaption(p, inputs).then(caption => ({ platform: p, caption }))
+      );
+      const captions = await Promise.all(captionPromises);
+
+      // Step 2 — generate poster images for each platform (parallel)
+      renderLoading("Designing posters…");
+      const imagePromises = inputs.platforms.map(p =>
+        generateImage(p, inputs).then(imgUrl => ({ platform: p, imgUrl }))
+      );
+      const images = await Promise.all(imagePromises);
+
+      // Step 3 — composite the client's logo (if uploaded) onto each poster
+      renderLoading("Finalizing designs…");
+      const finalPosts = await Promise.all(
+        inputs.platforms.map(async (p) => {
+          const imgUrl = images.find(x => x.platform === p).imgUrl;
+          const caption = captions.find(x => x.platform === p).caption;
+          const composited = await compositeImage(imgUrl, inputs, p);
+          return { platform: p, imgUrl: composited, caption };
+        })
+      );
+
+      renderResults(finalPosts, inputs);
+    } catch (err) {
+      console.error(err);
+      renderResultsWithError(err.message || "Something went wrong generating your posts.");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  // =============================================================
+  // OPENAI — CLIENT VIBE DETECTION
+  // Reads the company name + description and picks a design direction
+  // that fits the industry and brand personality.
+  // =============================================================
+  async function detectClientVibe(inputs) {
+    const systemPrompt = `You are a senior brand designer. Given a company and a job posting, ` +
+      `describe the ideal design direction for a hiring poster that feels truly native to this brand. ` +
+      `Output STRICT JSON only with these keys:\n` +
+      `  "vibe": 2-4 words naming the aesthetic (e.g. "bold & punchy", "refined editorial", "warm & neighborly")\n` +
+      `  "typography": describe font feel (e.g. "rough hand-lettered display + clean sans body", "elegant serif display", "bold geometric sans")\n` +
+      `  "palette": describe color usage given the brand color — accent colors, background tones, contrast strategy\n` +
+      `  "composition": describe layout style (e.g. "collage with paint-stroke dividers", "clean editorial with generous whitespace", "high-contrast poster with diagonal hierarchy")\n` +
+      `  "decorativeElements": short list of visual flourishes that fit (e.g. "palm tree silhouettes, halftone textures", "subtle geometric shapes", "none — keep it minimal")\n` +
+      `  "copyTone": one sentence describing how the headline copy should read\n` +
+      `Return ONLY the JSON object, no prose, no markdown fences.`;
+
+    const userPrompt =
+      `Company: ${inputs.company}\n` +
+      `Brand color: ${inputs.brandColor}\n` +
+      `Job title: ${inputs.jobTitle}\n` +
+      `Job description:\n${inputs.jobDescription}`;
+
+    const resp = await fetch("/.netlify/functions/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: TEXT_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!resp.ok) {
+      const errTxt = await resp.text();
+      throw new Error(`Vibe API error (${resp.status}): ${errTxt.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    try {
+      return JSON.parse(data.choices[0].message.content);
+    } catch {
+      // Fallback if JSON parsing somehow fails
+      return {
+        vibe: "clean modern",
+        typography: "bold geometric sans for display, clean sans for body",
+        palette: `${inputs.brandColor} as dominant accent with off-white background and dark text`,
+        composition: "clean editorial layout with clear hierarchy",
+        decorativeElements: "subtle geometric accents",
+        copyTone: "warm, direct, and inviting",
+      };
+    }
+  }
+
+  // =============================================================
+  // OPENAI — CAPTION GENERATION
+  // =============================================================
+  async function generateCaption(platform, inputs) {
+    const spec = PLATFORM_SPECS[platform];
+
+    const systemPrompt = `You are a hiring-content copywriter for CareerPlug, ` +
+      `creating ready-to-post social copy for small-business clients. ` +
+      `Write in the client's voice — warm, clear, never corporate-stale. ` +
+      `Do NOT use ALL CAPS. Do NOT start with "We're hiring" verbatim — find a better hook.\n\n` +
+      `URL HANDLING per platform:\n` +
+      `  - Instagram: end with "Link in bio to apply 👉" (do NOT include the URL; IG doesn't make links clickable in captions)\n` +
+      `  - TikTok: end with "Link in bio" (same reason)\n` +
+      `  - Facebook, LinkedIn, Nextdoor: include the full apply URL near the end as the call-to-action (e.g. "Apply today: {URL}")\n`;
+
+    const userPrompt = [
+      `Platform: ${platform}`,
+      `Tone guidance: ${spec.tone}`,
+      ``,
+      `Company: ${inputs.company}`,
+      `Job title: ${inputs.jobTitle}`,
+      `Apply URL: ${inputs.applyLink}`,
+      `Job description / details:`,
+      inputs.jobDescription,
+      ``,
+      `Write ONLY the caption text. No preamble, no explanation, no markdown.`,
+    ].join("\n");
+
+    const resp = await fetch("/.netlify/functions/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: TEXT_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.8,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errTxt = await resp.text();
+      throw new Error(`Caption API error (${resp.status}): ${errTxt.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content?.trim() || "";
+  }
+
+  // =============================================================
+  // OPENAI — IMAGE GENERATION (full poster design)
+  // Uses /v1/images/edits when a logo is uploaded (so the model can
+  // see it as visual reference), falls back to /v1/images/generations
+  // when no logo is provided.
+  // =============================================================
+  async function generateImage(platform, inputs) {
+    const spec = PLATFORM_SPECS[platform];
+    const d = inputs.designDirection;
+
+    const prompt = [
+      `Design a complete, professional hiring poster for "${inputs.company}" — a job ad for "${inputs.jobTitle}".`,
+      ``,
+      `OVERALL VIBE: ${d.vibe}. The poster should feel authentic to this specific brand, not generic.`,
+      `TYPOGRAPHY: ${d.typography}. The "WE'RE HIRING" or "NOW HIRING" headline should be the visual hero — large, confident, well-crafted type.`,
+      `LAYOUT & COMPOSITION: ${d.composition}.`,
+      `COLOR PALETTE: ${d.palette}. Primary brand color: ${inputs.brandColor}.`,
+      `DECORATIVE ELEMENTS: ${d.decorativeElements}.`,
+      ``,
+      `CONTENT TO RENDER IN THE IMAGE (render this text clearly and readably):`,
+      `  • Headline: "WE'RE HIRING" or similar (designer's choice, large)`,
+      `  • Job title: "${inputs.jobTitle}" (prominent, below the headline)`,
+      `  • Company name: "${inputs.company}" (integrated naturally)`,
+      `  • 2-4 short benefit callouts pulled from the job description, as iconified bullets or badges`,
+      `  • A clear "APPLY TODAY" or similar call-to-action somewhere in the composition`,
+      `  • Leave a small amount of clear space in the top-right corner (about 12% of width) where the company logo will be overlaid later; do NOT put text or important imagery there.`,
+      ``,
+      `IMAGERY: Include an authentic, editorial-quality photograph of a real person (or people) doing the actual job of "${inputs.jobTitle}". Natural lighting, genuine expression, not stock-photo-stiff. Integrate the photo into the layout — it can take up roughly half the composition.`,
+      ``,
+      `CONSTRAINTS:`,
+      `  • No QR codes, no barcodes anywhere in the design.`,
+      `  • Text must be rendered cleanly and be readable — no garbled letters, no made-up words.`,
+      `  • The overall feel should read like work from a strong brand designer, not AI-generic.`,
+      `  • Composition shape: ${spec.shape} (${spec.size} pixels).`,
+      ``,
+      `COPY TONE for any headlines/taglines: ${d.copyTone}`,
+    ].join("\n");
+
+    // Route all image generation through the secure Netlify Function proxy
+    const imagePayload = {
+      model: IMAGE_MODEL,
+      prompt: inputs.logoB64
+        ? prompt +
+          `\n\nADDITIONAL: The uploaded reference image is "${inputs.company}"'s actual logo. ` +
+          `Incorporate its visual style — its typography feel, color cues, and overall brand personality — ` +
+          `into the poster design. You can also include a version of the logo in the design itself if it fits naturally.`
+        : prompt,
+      size: spec.size,
+      logoB64: inputs.logoB64 || null,
+      logoMime: inputs.logoMime || null,
+    };
+
+    const resp = await fetch("/.netlify/functions/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(imagePayload),
+    });
+
+    if (!resp.ok) {
+      const errTxt = await resp.text();
+      throw new Error(`Image API error (${resp.status}): ${errTxt.slice(0, 250)}`);
+    }
+    const data = await resp.json();
+    const b64 = data.data?.[0]?.b64_json;
+    if (!b64) throw new Error("Image API returned no image data.");
+    return `data:image/png;base64,${b64}`;
+  }
+
+  // Helper to turn a base64 string into a Blob for multipart upload
+  function b64ToBlob(b64, mime) {
+    const byteChars = atob(b64);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    return new Blob([new Uint8Array(byteNumbers)], { type: mime });
+  }
+
+  // =============================================================
+  // COMPOSITE — overlay client logo badge (if uploaded) on the poster
+  // =============================================================
+  async function compositeImage(imgDataUrl, inputs, platform) {
+    // If no client logo to overlay, just return the poster as-is
+    if (!inputs.logoDataUrl) {
+      return imgDataUrl;
+    }
+
+    const baseImg = await loadImage(imgDataUrl);
+
+    let clientLogo = null;
+    try { clientLogo = await loadImage(inputs.logoDataUrl); } catch(e) { /* skip */ }
+    if (!clientLogo) return imgDataUrl;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = baseImg.width;
+    canvas.height = baseImg.height;
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(baseImg, 0, 0);
+
+    const padding = Math.round(canvas.width * 0.028);
+
+    // Client logo badge (top-right corner) — guarantees an accurate mark
+    const logoMaxH = Math.round(canvas.height * 0.08);
+    const logoMaxW = Math.round(canvas.width * 0.22);
+    const ratio = clientLogo.width / clientLogo.height;
+    let logoH = logoMaxH;
+    let logoW = logoH * ratio;
+    if (logoW > logoMaxW) { logoW = logoMaxW; logoH = logoW / ratio; }
+
+    const logoPad = Math.round(logoH * 0.25);
+    const badgeX = canvas.width - logoW - padding - logoPad * 2;
+    const badgeY = padding;
+    const badgeW = logoW + logoPad * 2;
+    const badgeH = logoH + logoPad * 2;
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.15)";
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = "rgba(255,255,255,0.96)";
+    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 10);
+    ctx.fill();
+    ctx.restore();
+    ctx.drawImage(clientLogo, badgeX + logoPad, badgeY + logoPad, logoW, logoH);
+
+    return canvas.toDataURL("image/png");
+  }
+
+  // =============================================================
+  // HELPERS
+  // =============================================================
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function hexToRgba(hex, alpha) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function getContrastingTextColor(hex) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    // Relative luminance
+    const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return L > 0.6 ? "#1A1F2E" : "#FFFFFF";
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // =============================================================
+  // RENDER STATES
+  // =============================================================
+  function renderLoading(step) {
+    resultsCard.innerHTML = `
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div class="step">${escapeHtml(step)}</div>
+        <p>This usually takes 15–30 seconds per platform.</p>
+      </div>
+    `;
+  }
+
+  function showError(msg) {
+    resultsCard.innerHTML = `
+      <div style="padding: 20px;">
+        <div class="error-banner"><strong>Heads up —</strong> ${msg}</div>
+      </div>
+      <div class="empty-state" style="min-height: 400px;">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/></svg>
+        </div>
+        <h3>Your posts will appear here</h3>
+        <p>Fix the issue above and try again.</p>
+      </div>
+    `;
+  }
+
+  function renderResultsWithError(msg) {
+    resultsCard.innerHTML = `
+      <div style="padding: 20px;">
+        <div class="error-banner"><strong>Error —</strong> ${escapeHtml(msg)}</div>
+        <p style="color: var(--text-muted); font-size: 13px;">
+          Check your OpenAI API key, network, and the model name in the config block at the top of the script.
+        </p>
+      </div>
+    `;
+  }
+
+  function renderResults(posts, inputs) {
+    const platformIcons = {
+      Instagram: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>`,
+      Facebook: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21.5v-8h2.7l.4-3.1h-3.1V8.4c0-.9.3-1.5 1.6-1.5h1.7V4.1c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1v2.3H7.7v3.1h2.7v8h3.1z"/></svg>`,
+      LinkedIn: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S.02 4.88.02 3.5C.02 2.12 1.13 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zm7.3 0h4.37v1.91h.06c.61-1.15 2.1-2.37 4.32-2.37 4.62 0 5.47 3.04 5.47 6.99V22h-4.56v-6.58c0-1.57-.03-3.58-2.18-3.58-2.18 0-2.52 1.7-2.52 3.47V22H7.52V8z"/></svg>`,
+      Nextdoor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2V11z"/></svg>`,
+      TikTok: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 6.3a5 5 0 01-2.9-.9v7.2a6 6 0 11-6-6v3a3 3 0 103 3V2h3a5 5 0 003 4.3z"/></svg>`,
+    };
+
+    const cards = posts.map(({ platform, imgUrl, caption }) => {
+      const safeCap = escapeHtml(caption);
+      const slug = `${inputs.company.replace(/\s+/g, "-").toLowerCase()}-${platform.toLowerCase()}.png`;
+      return `
+        <div class="post-card">
+          <div class="post-platform">
+            <span class="post-platform-label">${platformIcons[platform] || ""} ${platform}</span>
+            <button class="download-btn" data-action="download" data-url="${imgUrl}" data-filename="${slug}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download
+            </button>
+          </div>
+          <img src="${imgUrl}" class="post-image" alt="${platform} hiring post for ${escapeHtml(inputs.jobTitle)}" />
+          <div class="post-caption">${safeCap}</div>
+          <button class="copy-caption-btn" data-action="copy" data-caption="${encodeURIComponent(caption)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy caption
+          </button>
+        </div>
+      `;
+    }).join("");
+
+    resultsCard.innerHTML = `
+      <div class="results-header">
+        <h2><em>${posts.length}</em> hiring post${posts.length > 1 ? "s" : ""} ready</h2>
+        <div class="count">${escapeHtml(inputs.company)} · ${escapeHtml(inputs.jobTitle)}</div>
+      </div>
+      <div class="post-grid">${cards}</div>
+    `;
+
+    // Wire up download + copy buttons
+    resultsCard.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      if (btn.dataset.action === "download") {
+        const a = document.createElement("a");
+        a.href = btn.dataset.url;
+        a.download = btn.dataset.filename;
+        a.click();
+      } else if (btn.dataset.action === "copy") {
+        navigator.clipboard.writeText(decodeURIComponent(btn.dataset.caption))
+          .then(() => {
+            const orig = btn.innerHTML;
+            btn.innerHTML = "✓ Copied";
+            setTimeout(() => (btn.innerHTML = orig), 1500);
+          });
+      }
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+</script>
+
+</body>
+</html>
